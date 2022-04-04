@@ -238,6 +238,106 @@
         The boolean flag indicates if the chassis is used as an
         interconnection gateway.
       </dd>
+
+      <dt><code>external_ids:ovn-match-northd-version</code></dt>
+      <dd>
+        The boolean flag indicates if <code>ovn-controller</code> needs to
+        check <code>ovn-northd</code> version. If this
+        flag is set to true and the <code>ovn-northd's</code> version (reported
+        in the Southbound database) doesn't match with the
+        <code>ovn-controller's</code> internal version, then it will stop
+        processing the southbound and local Open vSwitch database changes.
+        The default value is considered false if this option is not defined.
+      </dd>
+
+      <dt><code>external_ids:ovn-ofctrl-wait-before-clear</code></dt>
+      <dd>
+        The time, in milliseconds, to wait before clearing flows in OVS after
+        OpenFlow connection/reconnection during <code>ovn-controller</code>
+        initialization. The purpose of this wait is to give time for
+        <code>ovn-controller</code> to compute the new flows before clearing
+        existing ones, to avoid data plane down time during
+        <code>ovn-controller</code> restart/upgrade at large scale
+        environments where recomputing the flows takes more than a few seconds
+        or even longer. It is difficult for <code>ovn-controller</code>
+        to determine when the new flows computing is completed, because of the
+        dynamics in the cloud environments, which is why this configuration is
+        provided for users to adjust based on the scale of the environment. By
+        default, it is 0, which means clearing existing flows without waiting.
+        Not setting the value, or setting it too small, may result in data
+        plane down time during upgrade/restart, while setting it too big may
+        result in unnecessary extra control plane latency of applying new
+        changes of CMS during upgrade/restart. In most cases, a slightly bigger
+        value is not harmful, because the extra control plane latency happens
+        only once during the OpenFlow connection. To get a reasonable range of
+        the value setting, it is recommended to run the below commands on a
+        node in the target environment and then set this configuration to twice
+        the value of <code>Maximum</code> shown in the output of the second
+        command.
+        <ul>
+          <li>
+            <code>ovn-appctl -t ovn-controller inc-engine/recompute</code>
+          </li>
+          <li>
+            <code>ovn-appctl -t ovn-controller stopwatch/show flow-generation</code>
+          </li>
+        </ul>
+      </dd>
+
+      <dt><code>external_ids:ovn-enable-lflow-cache</code></dt>
+      <dd>
+        The boolean flag indicates if <code>ovn-controller</code> should
+        enable/disable the logical flow in-memory cache it uses when
+        processing Southbound database logical flow changes.  By default
+        caching is enabled.
+      </dd>
+
+      <dt><code>external_ids:ovn-limit-lflow-cache</code></dt>
+      <dd>
+        When used, this configuration value determines the maximum number of
+        logical flow cache entries <code>ovn-controller</code> may create
+        when the logical flow cache is enabled.  By default the size of the
+        cache is unlimited.
+      </dd>
+      <dt><code>external_ids:ovn-memlimit-lflow-cache-kb</code></dt>
+      <dd>
+        When used, this configuration value determines the maximum size of
+        the logical flow cache (in KB) <code>ovn-controller</code> may create
+        when the logical flow cache is enabled.  By default the size of the
+        cache is unlimited.
+      </dd>
+
+      <dt><code>external_ids:ovn-trim-limit-lflow-cache</code></dt>
+      <dd>
+        When used, this configuration value sets the minimum number of entries
+        in the logical flow cache starting with which automatic memory trimming
+        is performed.  By default this is set to 10000 entries.
+      </dd>
+      <dt><code>external_ids:ovn-trim-wmark-perc-lflow-cache</code></dt>
+      <dd>
+        When used, this configuration value sets the percentage from the high
+        watermark number of entries in the logical flow cache under which
+        automatic memory trimming is performed.  E.g., if the trim watermark
+        percentage is set to 50%, automatic memory trimming happens only when
+        the number of entries in the logical flow cache gets reduced to less
+        than half of the last measured high watermark.  By default this is set
+        to 50.
+      </dd>
+      <dt><code>external_ids:ovn-trim-timeout-ms</code></dt>
+      <dd>
+        When used, this configuration value specifies the time, in
+        milliseconds, since the last logical flow cache operation after
+        which <code>ovn-controller</code> performs memory trimming regardless
+        of how many entries there are in the cache.  By default this is set to
+        30000 (30 seconds).
+      </dd>
+      <dt><code>external_ids:ovn-set-local-ip</code></dt>
+      <dd>
+        The boolean flag indicates if <code>ovn-controller</code> when create
+        tunnel ports should set <code>local_ip</code> parameter.  Can be
+        heplful to pin source outer IP for the tunnel when multiple interfaces
+        are used on the host for overlay traffic.
+      </dd>
     </dl>
 
     <p>
