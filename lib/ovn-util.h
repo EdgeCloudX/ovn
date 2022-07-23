@@ -207,4 +207,9 @@ char *str_tolower(const char *orig);
         case OVN_OPT_MONITOR:                       \
         case OVN_OPT_USER_GROUP:
 
-#endif
+void daemon_started_recently_countdown(void);
+void daemon_started_recently_ignore(void);
+bool daemon_started_recently(void);
+int64_t daemon_startup_ts(void);
+
+#endif /* OVN_UTIL_H */
