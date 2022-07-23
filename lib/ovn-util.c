@@ -604,7 +604,7 @@ str_tolower(const char *orig)
 }
 
 #define DAEMON_STARTUP_DELAY_SEED 20
-#define DAEMON_STARTUP_DELAY_MS   10000
+#define DAEMON_STARTUP_DELAY_MS   20000
 static int64_t startup_ts;
 static int startup_delay = DAEMON_STARTUP_DELAY_SEED;
 /* Used by debug command only, for tests. */
