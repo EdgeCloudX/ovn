@@ -5689,6 +5689,17 @@ build_acls(struct ovn_datapath *od, struct hmap *lflows,
                       "nd || nd_ra || nd_rs || mldv1 || mldv2", "next;");
     }
 
+    /* Add next rule for localnet port */
+    for (size_t i = 0; i < od->n_localnet_ports; i++) {
+        struct ovn_port *op = od->localnet_ports[i];
+        struct ds match_out = DS_EMPTY_INITIALIZER;
+        ds_put_format(&match_out, "outport == %s", op->json_key);
+        ovn_lflow_add_with_hint(lflows, od, S_SWITCH_OUT_ACL, UINT16_MAX,
+                                ds_cstr(&match_out), "next;",
+                                &op->nbsp->header_);
+        ds_destroy(&match_out);
+    }
+
     /* Ingress or Egress ACL Table (Various priorities). */
     for (size_t i = 0; i < od->nbs->n_acls; i++) {
         struct nbrec_acl *acl = od->nbs->acls[i];
