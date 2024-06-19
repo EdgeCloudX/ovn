@@ -3927,13 +3927,15 @@ send_garp_rarp(struct rconn *swconn, struct garp_rarp_data *garp_rarp,
     dp_packet_uninit(&packet);
     ofpbuf_uninit(&ofpacts);
 
-    /* Set the next announcement.  At most 5 announcements are sent for a
-     * vif. */
+    /* Set the next announcement.  If the backoff is less than 16, double the 
+     * backoff and add 1000 milliseconds to the current time to get the next 
+     * announcement time.  If the backoff is 16 or greater, add 3 minutes (180000 
+     * milliseconds) to the current time to get the next announcement time. */
     if (garp_rarp->backoff < 16) {
         garp_rarp->backoff *= 2;
         garp_rarp->announce_time = current_time + garp_rarp->backoff * 1000;
     } else {
-        garp_rarp->announce_time = LLONG_MAX;
+        garp_rarp->announce_time += 180000;
     }
     return garp_rarp->announce_time;
 }
