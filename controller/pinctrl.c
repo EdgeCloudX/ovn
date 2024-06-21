@@ -3893,16 +3893,16 @@ send_garp_rarp(struct rconn *swconn, struct garp_rarp_data *garp_rarp,
         return garp_rarp->announce_time;
     }
 
+    if (!garp_rarp->ipv4) {
+        goto set_next_announce;
+    }
+
     /* Compose a GARP request packet. */
     uint64_t packet_stub[128 / 8];
     struct dp_packet packet;
     dp_packet_use_stub(&packet, packet_stub, sizeof packet_stub);
-    if (garp_rarp->ipv4) {
-        compose_arp(&packet, ARP_OP_REQUEST, garp_rarp->ea, eth_addr_zero,
-                    true, garp_rarp->ipv4, garp_rarp->ipv4);
-    } else {
-        compose_rarp(&packet, garp_rarp->ea);
-    }
+    compose_arp(&packet, ARP_OP_REQUEST, garp_rarp->ea, eth_addr_zero,
+                true, garp_rarp->ipv4, garp_rarp->ipv4);
 
     /* Inject GARP request. */
     uint64_t ofpacts_stub[4096 / 8];
@@ -3927,6 +3927,7 @@ send_garp_rarp(struct rconn *swconn, struct garp_rarp_data *garp_rarp,
     dp_packet_uninit(&packet);
     ofpbuf_uninit(&ofpacts);
 
+set_next_announce:
     /* Set the next announcement.  If the backoff is less than 16, double the 
      * backoff and add 1000 milliseconds to the current time to get the next 
      * announcement time.  If the backoff is 16 or greater, add 3 minutes (180000 
