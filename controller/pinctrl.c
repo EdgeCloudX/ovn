@@ -950,16 +950,16 @@ compose_prefixd_solicit(struct dp_packet *b,
     }
     ia_pd->opt.len = htons(opt_len);
     ia_pd->iaid = htonl(pfd->aid);
-    ia_pd->t1 = OVS_BE32_MAX;
-    ia_pd->t2 = OVS_BE32_MAX;
+    ia_pd->t1 = 3600;
+    ia_pd->t2 = 5400;
     if (ipv6_addr_is_set(&pfd->prefix)) {
         struct dhcpv6_opt_ia_prefix *ia_prefix =
             (struct dhcpv6_opt_ia_prefix *)(ia_pd + 1);
         ia_prefix->opt.code = htons(DHCPV6_OPT_IA_PREFIX);
         ia_prefix->opt.len = htons(sizeof(struct dhcpv6_opt_ia_prefix) -
                                    sizeof(struct dhcpv6_opt_header));
-        ia_prefix->plife_time = OVS_BE32_MAX;
-        ia_prefix->vlife_time = OVS_BE32_MAX;
+        ia_prefix->plife_time = 3600;
+        ia_prefix->vlife_time = 5400;
         ia_prefix->plen = pfd->plen;
         ia_prefix->ipv6 = pfd->prefix;
     }
@@ -2010,17 +2010,17 @@ compose_out_dhcpv6_opts(struct ofpbuf *userdata,
              */
             opt_ia_na->opt.len = htons(12 + sizeof(struct dhcpv6_opt_ia_addr));
             opt_ia_na->iaid = iaid;
-            /* Set the lifetime of the address(es) to infinity */
-            opt_ia_na->t1 = OVS_BE32_MAX;
-            opt_ia_na->t2 = OVS_BE32_MAX;
+            /* Set the lifetime of the address(es) to 3600s */
+            opt_ia_na->t1 = 3600;
+            opt_ia_na->t2 = 5400;
 
             struct dhcpv6_opt_ia_addr *opt_ia_addr = ofpbuf_put_zeros(
                 out_dhcpv6_opts, sizeof *opt_ia_addr);
             opt_ia_addr->opt.code = htons(DHCPV6_OPT_IA_ADDR_CODE);
             opt_ia_addr->opt.len = htons(size + 8);
             memcpy(opt_ia_addr->ipv6.s6_addr, userdata_opt_data, size);
-            opt_ia_addr->t1 = OVS_BE32_MAX;
-            opt_ia_addr->t2 = OVS_BE32_MAX;
+            opt_ia_addr->t1 = 3600;
+            opt_ia_addr->t2 = 5400;
             break;
         }
 

@@ -28,6 +28,7 @@ struct hmap;
 struct match;
 struct ofpbuf;
 struct ovsrec_bridge;
+struct ovsrec_open_vswitch_table;
 struct sbrec_meter_table;
 struct shash;
 
@@ -50,6 +51,7 @@ void ofctrl_init(struct ovn_extend_table *group_table,
                  struct ovn_extend_table *meter_table,
                  int inactivity_probe_interval);
 void ofctrl_run(const struct ovsrec_bridge *br_int,
+                const struct ovsrec_open_vswitch_table *,
                 struct shash *pending_ct_zones);
 enum mf_field_id ofctrl_get_mf_field_id(void);
 void ofctrl_put(struct ovn_desired_flow_table *,
@@ -57,7 +59,7 @@ void ofctrl_put(struct ovn_desired_flow_table *,
                 const struct sbrec_meter_table *,
                 int64_t nb_cfg,
                 bool flow_changed);
-bool ofctrl_can_put(void);
+bool ofctrl_has_backlog(void);
 void ofctrl_wait(void);
 void ofctrl_destroy(void);
 int64_t ofctrl_get_cur_cfg(void);

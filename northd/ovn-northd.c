@@ -4903,31 +4903,51 @@ build_lswitch_output_port_sec(struct hmap *ports, struct hmap *datapaths,
 
 static void
 build_pre_acl_flows(struct ovn_datapath *od, struct ovn_port *op,
-                    struct hmap *lflows)
+                    struct hmap *lflows, bool has_stateful)
 {
-    /* Can't use ct() for router ports. Consider the following configuration:
-     * lp1(10.0.0.2) on hostA--ls1--lr0--ls2--lp2(10.0.1.2) on hostB, For a
-     * ping from lp1 to lp2, First, the response will go through ct() with a
-     * zone for lp2 in the ls2 ingress pipeline on hostB.  That ct zone knows
-     * about this connection. Next, it goes through ct() with the zone for the
-     * router port in the egress pipeline of ls2 on hostB.  This zone does not
-     * know about the connection, as the icmp request went through the logical
-     * router on hostA, not hostB. This would only work with distributed
-     * conntrack state across all chassis. */
-    struct ds match_in = DS_EMPTY_INITIALIZER;
-    struct ds match_out = DS_EMPTY_INITIALIZER;
+    if (has_stateful) {
+        /* Can't use ct() for router ports. Consider the following configuration:
+        * lp1(10.0.0.2) on hostA--ls1--lr0--ls2--lp2(10.0.1.2) on hostB, For a
+        * ping from lp1 to lp2, First, the response will go through ct() with a
+        * zone for lp2 in the ls2 ingress pipeline on hostB.  That ct zone knows
+        * about this connection. Next, it goes through ct() with the zone for the
+        * router port in the egress pipeline of ls2 on hostB.  This zone does not
+        * know about the connection, as the icmp request went through the logical
+        * router on hostA, not hostB. This would only work with distributed
+        * conntrack state across all chassis. */
+        struct ds match_in = DS_EMPTY_INITIALIZER;
+        struct ds match_out = DS_EMPTY_INITIALIZER;
 
-    ds_put_format(&match_in, "ip && inport == %s", op->json_key);
-    ds_put_format(&match_out, "ip && outport == %s", op->json_key);
-    ovn_lflow_add_with_hint(lflows, od, S_SWITCH_IN_PRE_ACL, 110,
-                            ds_cstr(&match_in), "next;",
-                            &op->nbsp->header_);
-    ovn_lflow_add_with_hint(lflows, od, S_SWITCH_OUT_PRE_ACL, 110,
-                            ds_cstr(&match_out), "ct_clear;next;",
-                            &op->nbsp->header_);
+        ds_put_format(&match_in, "ip && inport == %s", op->json_key);
+        ds_put_format(&match_out, "ip && outport == %s", op->json_key);
+        ovn_lflow_add_with_hint(lflows, od, S_SWITCH_IN_PRE_ACL, 110,
+                                ds_cstr(&match_in), "next;",
+                                &op->nbsp->header_);
+        ovn_lflow_add_with_hint(lflows, od, S_SWITCH_OUT_PRE_ACL, 110,
+                                ds_cstr(&match_out), "ct_clear;next;",
+                                &op->nbsp->header_);
 
-    ds_destroy(&match_in);
-    ds_destroy(&match_out);
+        ds_destroy(&match_in);
+        ds_destroy(&match_out);
+    }
+
+    if (!strcmp(op->nbsp->type, "localnet")) {
+        struct ds match_localnet_in = DS_EMPTY_INITIALIZER;
+        struct ds match_localnet_out = DS_EMPTY_INITIALIZER;
+        ds_put_format(&match_localnet_in, "ip && inport == %s && "
+                        "(nd_rs || nd_ra)", op->json_key);
+        ds_put_format(&match_localnet_out, "ip && outport == %s && " 
+                        "(nd_rs || nd_ra)", op->json_key);
+        ovn_lflow_add_with_hint(lflows, od, S_SWITCH_IN_PRE_ACL, INT16_MAX,
+                                ds_cstr(&match_localnet_in), "drop;",
+                                &op->nbsp->header_);
+        ovn_lflow_add_with_hint(lflows, od, S_SWITCH_OUT_PRE_ACL, INT16_MAX,
+                                ds_cstr(&match_localnet_out), "drop;",
+                                &op->nbsp->header_);
+
+        ds_destroy(&match_localnet_in);
+        ds_destroy(&match_localnet_out);
+    }
 }
 
 static void
@@ -4998,14 +5018,13 @@ build_pre_acls(struct ovn_datapath *od, struct hmap *port_groups,
     /* If there are any stateful ACL rules in this datapath, we may
      * send IP packets for some (allow) filters through the conntrack action,
      * which handles defragmentation, in order to match L4 headers. */
+    for (size_t i = 0; i < od->n_router_ports; i++) {
+        build_pre_acl_flows(od, od->router_ports[i], lflows, has_stateful);
+    }
+    for (size_t i = 0; i < od->n_localnet_ports; i++) {
+        build_pre_acl_flows(od, od->localnet_ports[i], lflows, has_stateful);
+    }
     if (has_stateful) {
-        for (size_t i = 0; i < od->n_router_ports; i++) {
-            build_pre_acl_flows(od, od->router_ports[i], lflows);
-        }
-        for (size_t i = 0; i < od->n_localnet_ports; i++) {
-            build_pre_acl_flows(od, od->localnet_ports[i], lflows);
-        }
-
         build_stateless_filters(od, port_groups, lflows);
 
         /* Ingress and Egress Pre-ACL Table (Priority 110).
@@ -5668,6 +5687,17 @@ build_acls(struct ovn_datapath *od, struct hmap *lflows,
                       "nd || nd_ra || nd_rs || mldv1 || mldv2", "next;");
         ovn_lflow_add(lflows, od, S_SWITCH_OUT_ACL, UINT16_MAX,
                       "nd || nd_ra || nd_rs || mldv1 || mldv2", "next;");
+    }
+
+    /* Add next rule for localnet port */
+    for (size_t i = 0; i < od->n_localnet_ports; i++) {
+        struct ovn_port *op = od->localnet_ports[i];
+        struct ds match_out = DS_EMPTY_INITIALIZER;
+        ds_put_format(&match_out, "outport == %s", op->json_key);
+        ovn_lflow_add_with_hint(lflows, od, S_SWITCH_OUT_ACL, UINT16_MAX,
+                                ds_cstr(&match_out), "next;",
+                                &op->nbsp->header_);
+        ds_destroy(&match_out);
     }
 
     /* Ingress or Egress ACL Table (Various priorities). */
