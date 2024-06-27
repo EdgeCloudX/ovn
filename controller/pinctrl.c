@@ -3788,7 +3788,7 @@ add_garp_rarp(const char *name, const struct eth_addr ea, ovs_be32 ip,
     garp_rarp->ea = ea;
     garp_rarp->ipv4 = ip;
     garp_rarp->announce_time = time_msec() + 1000;
-    garp_rarp->backoff = 1;
+    garp_rarp->backoff = 1000;
     garp_rarp->dp_key = dp_key;
     garp_rarp->port_key = port_key;
     shash_add(&send_garp_rarp_data, name, garp_rarp);
@@ -3827,6 +3827,8 @@ send_garp_rarp_update(const struct sbrec_port_binding *binding_rec,
                 if (garp_rarp) {
                     garp_rarp->dp_key = binding_rec->datapath->tunnel_key;
                     garp_rarp->port_key = binding_rec->tunnel_key;
+                    garp_rarp->announce_time = time_msec() + 1000;
+                    garp_rarp->backoff = 1000;
                 } else {
                     add_garp_rarp(name, laddrs->ea,
                                   laddrs->ipv4_addrs[i].addr,
@@ -3847,6 +3849,8 @@ send_garp_rarp_update(const struct sbrec_port_binding *binding_rec,
     if (garp_rarp) {
         garp_rarp->dp_key = binding_rec->datapath->tunnel_key;
         garp_rarp->port_key = binding_rec->tunnel_key;
+        garp_rarp->announce_time = time_msec() + 1000;
+        garp_rarp->backoff = 1000;
         return;
     }
 
@@ -3934,7 +3938,7 @@ set_next_announce:
      * milliseconds) to the current time to get the next announcement time. */
     if (garp_rarp->backoff < 16) {
         garp_rarp->backoff *= 2;
-        garp_rarp->announce_time = current_time + garp_rarp->backoff * 1000;
+        garp_rarp->announce_time = current_time + garp_rarp->backoff;
     } else {
         garp_rarp->announce_time += 180000;
     }
