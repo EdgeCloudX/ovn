@@ -1440,6 +1440,16 @@ lrport_is_enabled(const struct nbrec_logical_router_port *lrport)
 }
 
 static bool
+lsp_force_fdb_lookup(const struct ovn_port *op)
+{
+    /* To enable FDB Table lookup on a logical switch port, it has to be
+     * of 'type' empty_string and "addresses" must have "unknown".
+     */
+    return !op->nbsp->type[0] && op->has_unknown &&
+        smap_get_bool(&op->nbsp->options, "force_fdb_lookup", false);
+}
+
+static bool
 ipam_is_duplicate_mac(struct eth_addr *ea, uint64_t mac64, bool warn)
 {
     struct macam_node *macam_node;
@@ -7283,6 +7293,12 @@ build_lswitch_flows(struct hmap *datapaths, struct hmap *ports,
             struct eth_addr mac;
             if (ovs_scan(op->nbsp->addresses[i],
                         ETH_ADDR_SCAN_FMT, ETH_ADDR_SCAN_ARGS(mac))) {
+                /* Skip adding flows related to the MAC address
+                * as force FDB Lookup is enabled on the lsp.
+                */
+                if (lsp_force_fdb_lookup(op)) {
+                    continue;
+                }
                 ds_clear(&match);
                 ds_put_format(&match, "eth.dst == "ETH_ADDR_FMT,
                               ETH_ADDR_ARGS(mac));
