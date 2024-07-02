@@ -7297,7 +7297,7 @@ build_lswitch_flows(struct hmap *datapaths, struct hmap *ports,
                 * as force FDB Lookup is enabled on the lsp.
                 */
                 if (lsp_force_fdb_lookup(op)) {
-                    continue;
+                    return;
                 }
                 ds_clear(&match);
                 ds_put_format(&match, "eth.dst == "ETH_ADDR_FMT,
