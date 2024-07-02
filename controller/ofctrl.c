@@ -2267,17 +2267,6 @@ ofctrl_put(struct ovn_desired_flow_table *flow_table,
     
     skipped_last_time = false;
 
-    if (ovs_list_back(&msgs) == &bundle_open->list_node) {
-        /* No flow updates.  Removing the bundle open request. */
-        ovs_list_pop_back(&msgs);
-        ofpbuf_delete(bundle_open);
-    } else {
-        /* Committing the bundle. */
-        bc.type = OFPBCT_COMMIT_REQUEST;
-        bundle_commit = ofputil_encode_bundle_ctrl_request(OFP15_VERSION, &bc);
-        ovs_list_push_back(&msgs, &bundle_commit->list_node);
-    }
-
     /* Iterate through the installed groups from previous runs. If they
      * are not needed delete them. */
     struct ovn_extend_table_info *installed, *next_group;
