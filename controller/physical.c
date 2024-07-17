@@ -475,6 +475,7 @@ put_chassis_mac_conj_id_flow(const struct sbrec_chassis_table *chassis_table,
                              struct ofpbuf *ofpacts_p,
                              struct ovn_desired_flow_table *flow_table)
 {
+    static const struct eth_addr dl_src_mask = ETH_ADDR_C(0,0,0,ff,ff,ff);
     struct match match;
     struct remote_chassis_mac *mac;
 
@@ -495,7 +496,7 @@ put_chassis_mac_conj_id_flow(const struct sbrec_chassis_table *chassis_table,
         match_init_catchall(&match);
 
 
-        match_set_dl_src(&match, chassis_mac);
+        match_set_dl_src_masked(&match, chassis_mac, dl_src_mask);
 
         conj = ofpact_put_CONJUNCTION(ofpacts_p);
         conj->id = CHASSIS_MAC_TO_ROUTER_MAC_CONJID;
@@ -684,7 +685,15 @@ put_replace_router_port_mac_flows(struct ovsdb_idl_index
         match_set_dl_src(&match, router_port_mac);
 
         replace_mac = ofpact_put_SET_ETH_SRC(ofpacts_p);
-        replace_mac->mac = chassis_mac;
+        /* copy from router port mac */
+        replace_mac->mac.ea[0] = 0;
+        replace_mac->mac.ea[1] = router_port_mac.ea[4];
+        replace_mac->mac.ea[2] = router_port_mac.ea[5];
+        /* copy from chassis mac */
+        replace_mac->mac.ea[3] = chassis_mac.ea[3];
+        replace_mac->mac.ea[4] = chassis_mac.ea[4];
+        replace_mac->mac.ea[5] = chassis_mac.ea[5];
+
 
         if (tag) {
             struct ofpact_vlan_vid *vlan_vid;
