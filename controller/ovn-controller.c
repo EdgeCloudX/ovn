@@ -75,6 +75,7 @@ static unixctl_cb_func engine_recompute_cmd;
 static unixctl_cb_func debug_pause_execution;
 static unixctl_cb_func debug_resume_execution;
 static unixctl_cb_func debug_status_execution;
+static unixctl_cb_func debug_ignore_startup_delay;
 
 #define DEFAULT_BRIDGE_NAME "br-int"
 #define DEFAULT_PROBE_INTERVAL_MSEC 5000
@@ -2320,7 +2321,8 @@ main(int argc, char *argv[])
                              &paused);
     unixctl_command_register("debug/status", "", 0, 0, debug_status_execution,
                              &paused);
-
+    unixctl_command_register("debug/ignore-startup-delay", "", 0, 0,
+                             debug_ignore_startup_delay, NULL);
     unsigned int ovs_cond_seqno = UINT_MAX;
     unsigned int ovnsb_cond_seqno = UINT_MAX;
 
@@ -2441,6 +2443,10 @@ main(int argc, char *argv[])
                     }
                     stopwatch_stop(CONTROLLER_LOOP_STOPWATCH_NAME,
                                    time_msec());
+                    if (engine_has_updated()) {
+                        daemon_started_recently_countdown();
+                    }
+
                     ct_zones_data = engine_get_data(&en_ct_zones);
                     if (ovs_idl_txn) {
                         if (ct_zones_data) {
@@ -2858,4 +2864,12 @@ debug_status_execution(struct unixctl_conn *conn, int argc OVS_UNUSED,
     } else {
         unixctl_command_reply(conn, "running");
     }
+}
+
+static void
+debug_ignore_startup_delay(struct unixctl_conn *conn, int argc OVS_UNUSED,
+                           const char *argv[] OVS_UNUSED, void *arg OVS_UNUSED)
+{
+    daemon_started_recently_ignore();
+    unixctl_command_reply(conn, NULL);
 }

@@ -171,3 +171,10 @@ OVN To-do List
     to find a way of determining if routing has already been executed (on a
     different hypervisor) for the IP multicast packet being processed locally
     in the router pipeline.
+
+* ovn-controller daemon module
+
+  * Dumitru Ceara: Add a new module e.g. ovn/lib/daemon-ovn.c that wraps
+    OVS' daemonize_start() call and initializes the additional things, like
+    the unixctl commands. Or, we should move the APIs such as
+    daemon_started_recently() to OVS's lib/daemon.
