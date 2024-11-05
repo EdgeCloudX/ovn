@@ -7586,7 +7586,7 @@ OVN_CLEANUP([hv1])
 
 AT_CLEANUP
 
-AT_SETUP([ovn -- send gratuitous arp with nat-addresses router in localnet])
+AT_SETUP([send gratuitous arp with nat-addresses router in localnet])
 ovn_start
 # Create logical switch
 ovn-nbctl ls-add ls0
