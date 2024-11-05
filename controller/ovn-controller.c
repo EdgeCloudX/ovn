@@ -2491,7 +2491,9 @@ main(int argc, char *argv[])
                                         ovnsb_idl_loop.idl),
                                     br_int, chassis,
                                     &runtime_data->local_datapaths,
-                                    &runtime_data->active_tunnels);
+                                    &runtime_data->active_tunnels,
+                                    ovsrec_open_vswitch_table_get(
+                                            ovs_idl_loop.idl));
                         if (engine_node_changed(&en_runtime_data)) {
                             update_sb_monitors(ovnsb_idl_loop.idl, chassis,
                                                &runtime_data->local_lports,
