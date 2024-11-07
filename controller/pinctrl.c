@@ -2003,8 +2003,8 @@ compose_out_dhcpv6_opts(struct ofpbuf *userdata,
             opt_len += sizeof(struct dhcpv6_opt_ia_prefix);
             ia_pd->opt.len = htons(opt_len);
             ia_pd->iaid = iaid;
-            ia_pd->t1 = OVS_BE32_MAX;
-            ia_pd->t2 = OVS_BE32_MAX;
+            ia_pd->t1 = 3600;
+            ia_pd->t2 = 6300;
 
             struct dhcpv6_opt_ia_prefix *ia_prefix =
                 (struct dhcpv6_opt_ia_prefix *)(ia_pd + 1);
