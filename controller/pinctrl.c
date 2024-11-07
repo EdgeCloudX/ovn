@@ -1997,17 +1997,20 @@ compose_out_dhcpv6_opts(struct ofpbuf *userdata,
                 out_dhcpv6_opts, sizeof *ia_pd);
 
             ia_pd->opt.code = htons(DHCPV6_OPT_IA_PD);
-            int opt_len = sizeof(struct dhcpv6_opt_ia_na) -
-                    sizeof(struct dhcpv6_opt_header);
+            // int opt_len = sizeof(struct dhcpv6_opt_ia_na) -
+            //         sizeof(struct dhcpv6_opt_header);
 
-            opt_len += sizeof(struct dhcpv6_opt_ia_prefix);
-            ia_pd->opt.len = htons(opt_len);
+            // opt_len += sizeof(struct dhcpv6_opt_ia_prefix);
+            ia_pd->opt.len = htons(12 + sizeof(struct dhcpv6_opt_ia_prefix));
+            //ia_pd->opt.len = htons(opt_len);
             ia_pd->iaid = iaid;
             ia_pd->t1 = 3600;
             ia_pd->t2 = 6300;
 
-            struct dhcpv6_opt_ia_prefix *ia_prefix =
-                (struct dhcpv6_opt_ia_prefix *)(ia_pd + 1);
+            struct dhcpv6_opt_ia_prefix *ia_prefix = ofpbuf_put_zeros(
+                out_dhcpv6_opts, sizeof *ia_prefix);
+            // struct dhcpv6_opt_ia_prefix *ia_prefix =
+            //     (struct dhcpv6_opt_ia_prefix *)(ia_pd + 1);
             ia_prefix->opt.code = htons(DHCPV6_OPT_IA_PREFIX);
             ia_prefix->opt.len = htons(sizeof(struct dhcpv6_opt_ia_prefix) -
                                        sizeof(struct dhcpv6_opt_header));
