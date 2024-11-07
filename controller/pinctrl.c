@@ -1996,7 +1996,7 @@ compose_out_dhcpv6_opts(struct ofpbuf *userdata,
             struct dhcpv6_opt_ia_na *ia_pd = ofpbuf_put_zeros(
                 out_dhcpv6_opts, sizeof *ia_pd);
 
-            ia_pd->opt.code = htons(DHCPV6_OPT_IA_PD);
+            ia_pd->opt.code = htons(DHCPV6_OPT_IA_NA_CODE);
             // int opt_len = sizeof(struct dhcpv6_opt_ia_na) -
             //         sizeof(struct dhcpv6_opt_header);
 
