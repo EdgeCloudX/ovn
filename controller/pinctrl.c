@@ -1992,35 +1992,30 @@ compose_out_dhcpv6_opts(struct ofpbuf *userdata,
                  * Don't put IA_NA option in the response. */
                  break;
             }
-            /* IA Address option is used to specify IPv6 addresses associated
-             * with an IA_NA or IA_TA. The IA Address option must be
-             * encapsulated in the Options field of an IA_NA or IA_TA option.
-             *
-             * We will encapsulate the IA Address within the IA_NA option.
-             * Please see RFC 3315 section 22.5 and 22.6
-             */
-            struct dhcpv6_opt_ia_na *opt_ia_na = ofpbuf_put_zeros(
-                out_dhcpv6_opts, sizeof *opt_ia_na);
-            opt_ia_na->opt.code = htons(DHCPV6_OPT_IA_NA_CODE);
-            /* IA_NA length (in bytes)-
-             *  IAID - 4
-             *  T1   - 4
-             *  T2   - 4
-             *  IA Address - sizeof(struct dhcpv6_opt_ia_addr)
-             */
-            opt_ia_na->opt.len = htons(12 + sizeof(struct dhcpv6_opt_ia_addr));
-            opt_ia_na->iaid = iaid;
-            /* Set the lifetime of the address(es) to infinity */
-            opt_ia_na->t1 = OVS_BE32_MAX;
-            opt_ia_na->t2 = OVS_BE32_MAX;
 
-            struct dhcpv6_opt_ia_addr *opt_ia_addr = ofpbuf_put_zeros(
-                out_dhcpv6_opts, sizeof *opt_ia_addr);
-            opt_ia_addr->opt.code = htons(DHCPV6_OPT_IA_ADDR_CODE);
-            opt_ia_addr->opt.len = htons(size + 8);
-            memcpy(opt_ia_addr->ipv6.s6_addr, userdata_opt_data, size);
-            opt_ia_addr->t1 = OVS_BE32_MAX;
-            opt_ia_addr->t2 = OVS_BE32_MAX;
+            struct dhcpv6_opt_ia_na *ia_pd = ofpbuf_put_zeros(
+                out_dhcpv6_opts, sizeof *ia_pd);
+
+            ia_pd->opt.code = htons(DHCPV6_OPT_IA_PD);
+            int opt_len = sizeof(struct dhcpv6_opt_ia_na) -
+                    sizeof(struct dhcpv6_opt_header);
+
+            opt_len += sizeof(struct dhcpv6_opt_ia_prefix);
+            ia_pd->opt.len = htons(opt_len);
+            ia_pd->iaid = iaid;
+            ia_pd->t1 = OVS_BE32_MAX;
+            ia_pd->t2 = OVS_BE32_MAX;
+
+            struct dhcpv6_opt_ia_prefix *ia_prefix =
+                (struct dhcpv6_opt_ia_prefix *)(ia_pd + 1);
+            ia_prefix->opt.code = htons(DHCPV6_OPT_IA_PREFIX);
+            ia_prefix->opt.len = htons(sizeof(struct dhcpv6_opt_ia_prefix) -
+                                       sizeof(struct dhcpv6_opt_header));
+            ia_prefix->plife_time = OVS_BE32_MAX;
+            ia_prefix->vlife_time = OVS_BE32_MAX;
+            ia_prefix->plen = 128;
+            //ia_prefix->ipv6 = pfd->prefix;
+            memcpy(&ia_prefix->ipv6, userdata_opt_data, size);
             break;
         }
 
